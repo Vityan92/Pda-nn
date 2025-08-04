@@ -5,21 +5,18 @@ import 'home_page/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('ru_RU', null); // Инициализация локали
+  await initializeDateFormatting('ru_RU', null);
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Chromos IS',
-      locale: const Locale('ru', 'RU'), // Устанавливаем язык
-      supportedLocales: const [
-        Locale('ru', 'RU'), // Русская локаль
-      ],
+      locale: const Locale('ru', 'RU'),
+      supportedLocales: const [Locale('ru', 'RU')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

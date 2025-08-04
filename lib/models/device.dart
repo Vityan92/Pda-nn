@@ -9,6 +9,10 @@ class Device {
   final DateTime plannedShipmentDate;
   final String responsiblePerson;
 
+  // Новые поля:
+  final bool hasCalibration;
+  final String? comment;
+
   Device({
     this.id,
     required this.orderCardNumber,
@@ -19,29 +23,43 @@ class Device {
     required this.dateReceived,
     required this.plannedShipmentDate,
     required this.responsiblePerson,
+    this.hasCalibration = false,
+    this.comment,
   });
 
   factory Device.fromJson(Map<String, dynamic> json) => Device(
-    id: json['id'],
-    orderCardNumber: json['order_card_number'],
-    deviceNumber: json['device_number'],
-    deviceType: json['device_type'],
-    workType: json['work_type'],
-    customerName: json['customer_name'],
-    dateReceived: DateTime.parse(json['date_received']),
-    plannedShipmentDate: DateTime.parse(json['planned_shipment_date']),
-    responsiblePerson: json['responsible_person'],
+    id: json['id'] as int?,
+    orderCardNumber: json['order_card_number'] as String,
+    deviceNumber: json['device_number'] as String,
+    deviceType: json['device_type'] as String,
+    workType: json['work_type'] as String,
+    customerName: json['customer_name'] as String,
+    dateReceived: DateTime.parse(json['date_received'] as String),
+    plannedShipmentDate:
+    DateTime.parse(json['planned_shipment_date'] as String),
+    responsiblePerson: json['responsible_person'] as String,
+    hasCalibration: (json['has_calibration'] as int? ?? 0) == 1,
+    comment: json['comment'] as String?,
   );
 
-  Map<String, dynamic> toJson() => {
-    if (id != null) 'id': id,
-    'order_card_number': orderCardNumber,
-    'device_number': deviceNumber,
-    'device_type': deviceType,
-    'work_type': workType,
-    'customer_name': customerName,
-    'date_received': dateReceived.toIso8601String(),
-    'planned_shipment_date': plannedShipmentDate.toIso8601String(),
-    'responsible_person': responsiblePerson,
-  };
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{
+      if (id != null) 'id': id,
+      'order_card_number': orderCardNumber,
+      'device_number': deviceNumber,
+      'device_type': deviceType,
+      'work_type': workType,
+      'customer_name': customerName,
+      'date_received': dateReceived.toIso8601String().split('T').first,
+      'planned_shipment_date':
+      plannedShipmentDate.toIso8601String().split('T').first,
+      'responsible_person': responsiblePerson,
+      // новые поля
+      'has_calibration': hasCalibration ? 1 : 0,
+    };
+    if (comment != null && comment!.isNotEmpty) {
+      m['comment'] = comment;
+    }
+    return m;
+  }
 }
