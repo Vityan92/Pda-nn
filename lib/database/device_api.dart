@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/device.dart';
 
 class DeviceApi {
-  static const _base = 'http://89.109.11.120:8080';
+  static const _base = 'http://89.109.11.120:5';
 
   static Future<List<Device>> fetchDevices() async {
     final res = await http.get(Uri.parse('$_base/devices'));

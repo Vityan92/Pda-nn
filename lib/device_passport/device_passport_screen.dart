@@ -1,4 +1,8 @@
+// lib/device_passport/device_passport_screen.dart
+
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../models/device.dart';
 import 'detectors_section.dart';
 import 'columns_section.dart';
@@ -57,8 +61,50 @@ class _DevicePassportScreenState extends State<DevicePassportScreen> {
     });
   }
 
-  void _save() {
-    // TODO: отправка данных на сервер
+  void _save() async {
+    final device = widget.device;
+
+    final updatedData = {
+      'deviceNumber': device.deviceNumber,
+      'orderCardNumber': device.orderCardNumber,
+      'deviceType': device.deviceType,
+      'workType': device.workType,
+      'customerName': device.customerName,
+      'dateReceived': device.dateReceived.toIso8601String(),
+      'plannedShipmentDate': device.plannedShipmentDate.toIso8601String(),
+      'responsiblePerson': device.responsiblePerson,
+      'hasCalibration': _hasCalibration,
+      'comment': _commentCtrl.text,
+      'detectors': _detectors
+          .map((d) => {'type': d.type, 'number': d.number})
+          .toList(),
+      'columns': _columns
+          .map((c) => {'name': c.name, 'number': c.number})
+          .toList(),
+    };
+
+    final uri = Uri.parse('http://89.109.11.120:5/devices/${device.id}');
+    try {
+      final res = await http.patch(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(updatedData),
+      );
+
+      if (res.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Паспорт прибора обновлён')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: ${res.statusCode}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка соединения: $e')),
+      );
+    }
   }
 
   String _fmt(DateTime d) =>
@@ -112,7 +158,7 @@ class _DevicePassportScreenState extends State<DevicePassportScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Шапка карточки: карта заказа + иконка
+                // Шапка
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -132,8 +178,6 @@ class _DevicePassportScreenState extends State<DevicePassportScreen> {
                 ),
                 const Divider(color: Colors.redAccent),
                 const SizedBox(height: 8),
-
-                // Основные поля
                 _infoRow('Номер прибора', device.deviceNumber),
                 _infoRow('Тип прибора', device.deviceType),
                 _infoRow('Тип работ', device.workType),
@@ -141,21 +185,15 @@ class _DevicePassportScreenState extends State<DevicePassportScreen> {
                 _infoRow('Поступление', _fmt(device.dateReceived)),
                 _infoRow('Отгрузка', _fmt(device.plannedShipmentDate)),
                 _infoRow('Ответственный', device.responsiblePerson),
-
                 const SizedBox(height: 24),
-
-                // Раздел «Детекторы» с заголовком и рамкой
-                const Text('Детекторы', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.redAccent, width: 1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: _editMode
-                      ? Column(
-                    children: [
-                      const Divider(color: Colors.redAccent),
+                ExpansionTile(
+                  initiallyExpanded: _editMode,
+                  title: const Text('Детекторы', style: TextStyle(fontWeight: FontWeight.bold)),
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  expandedAlignment: Alignment.centerLeft,
+                  children: [
+                    if (_editMode)
                       DetectorsSection(
                         detectorCount: _detectorCount,
                         detectors: _detectors,
@@ -165,35 +203,23 @@ class _DevicePassportScreenState extends State<DevicePassportScreen> {
                             _initSections();
                           });
                         },
-                      ),
-                      const Divider(color: Colors.redAccent),
-                    ],
-                  )
-                      : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                      )
+                    else
                       for (int i = 0; i < _detectorCount; i++) ...[
                         Text('${i + 1}. ${_detectors[i].type}-${i + 1}  №${_detectors[i].number}'),
                         if (i < _detectorCount - 1) const Divider(color: Colors.redAccent),
                       ],
-                    ],
-                  ),
+                  ],
                 ),
-
                 const SizedBox(height: 16),
-
-                // Раздел «Колонки» с заголовком и рамкой
-                const Text('Колонки', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.redAccent, width: 1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: _editMode
-                      ? Column(
-                    children: [
-                      const Divider(color: Colors.redAccent),
+                ExpansionTile(
+                  initiallyExpanded: _editMode,
+                  title: const Text('Колонки', style: TextStyle(fontWeight: FontWeight.bold)),
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  expandedAlignment: Alignment.centerLeft,
+                  children: [
+                    if (_editMode)
                       ColumnsSection(
                         columnCount: _columnCount,
                         columns: _columns,
@@ -203,24 +229,15 @@ class _DevicePassportScreenState extends State<DevicePassportScreen> {
                             _initSections();
                           });
                         },
-                      ),
-                      const Divider(color: Colors.redAccent),
-                    ],
-                  )
-                      : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                      )
+                    else
                       for (int i = 0; i < _columnCount; i++) ...[
                         Text('${i + 1}. ${_columns[i].name}  №${_columns[i].number}'),
                         if (i < _columnCount - 1) const Divider(color: Colors.redAccent),
                       ],
-                    ],
-                  ),
+                  ],
                 ),
-
                 const SizedBox(height: 24),
-
-                // Наличие поверки
                 Row(
                   children: [
                     const Text('Наличие поверки: ', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -230,10 +247,7 @@ class _DevicePassportScreenState extends State<DevicePassportScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 16),
-
-                // Комментарий
                 const Text('Комментарий:', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 _editMode
@@ -245,9 +259,9 @@ class _DevicePassportScreenState extends State<DevicePassportScreen> {
                     hintText: 'Добавить комментарий',
                   ),
                 )
-                    : Text(
-                  _commentCtrl.text.isEmpty ? 'Добавить комментарий' : _commentCtrl.text,
-                ),
+                    : Text(_commentCtrl.text.isEmpty
+                    ? 'Добавить комментарий'
+                    : _commentCtrl.text),
               ],
             ),
           ),
